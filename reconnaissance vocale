@@ -1,0 +1,55 @@
+import streamlit as st
+from wit import Wit
+import speech_recognition as sr
+
+# Remplacez 'VOTRE_CLÉ_API_WIT' par votre clé API Wit.ai
+WIT_AI_API_KEY = 'XBAGFDPTCIG7INHKQKVW7GWNSCDALMGA'
+
+def transcrire_audio():
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        st.warning("Parlez maintenant... (Timeout: 5 secondes)")
+        try:
+            audio_text = r.listen(source, timeout=5)
+            st.success("Transcription réussie.")
+            return r.recognize_google(audio_text)
+        except sr.UnknownValueError:
+            st.error("Impossible de comprendre la saisie vocale.")
+            return None
+        except sr.RequestError as e:
+            st.error(f"Erreur de service de reconnaissance vocale : {e}")
+            return None
+
+def wit_ai_reconnaissance_vocale(audio_text):
+    client = Wit(WIT_AI_API_KEY)
+    try:
+        response = client.speech(audio_text, {'Content-Type': 'audio/wav'})
+        return response
+    except Exception as e:
+        st.error(f"Erreur lors de l'appel à l'API Wit.ai : {e}")
+        return None
+
+def main():
+    st.title("Chatbot Vocal avec Wit.ai")
+
+    user_input = st.text_input("Vous pouvez saisir votre message ici:")
+
+    if st.button("Envoyer"):
+        if user_input:
+            # Si l'utilisateur a fourni un message texte
+            response = wit_ai_reconnaissance_vocale(user_input)
+        else:
+            # Si l'utilisateur a utilisé la saisie vocale
+            speech_input = transcrire_audio()
+            if speech_input is not None:
+                response = wit_ai_reconnaissance_vocale(speech_input)
+            else:
+                response = None
+
+        if response:
+            st.write("Réponse de l'API Wit.ai :", response)
+        else:
+            st.error("Erreur lors de l'extraction de l'intention avec Wit.ai.")
+
+if __name__ == "__main__":
+    main()
